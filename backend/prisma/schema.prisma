@@ -1,0 +1,55 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+model Channel {
+  id           String   @id @default(uuid())
+  youtubeId    String   @unique
+  name         String?
+  customUrl    String?
+  thumbnailUrl String?
+  isActive     Boolean  @default(true)
+  createdAt    DateTime @default(now())
+  videos       Video[]
+}
+
+model Video {
+  id          String   @id @default(uuid())
+  videoId     String   @unique
+  title       String
+  description String?  @db.Text
+  viewCount   Int
+  publishedAt DateTime
+  createdAt   DateTime @default(now())
+  channelId   String
+  channel     Channel  @relation(fields: [channelId], references: [id])
+  trends      Trend[]
+
+  @@index([channelId])
+  @@index([publishedAt])
+}
+
+model TrendReport {
+  id                  String   @id @default(uuid())
+  analysisDate        DateTime @unique
+  totalVideosAnalyzed Int
+  createdAt           DateTime @default(now())
+  trends              Trend[]
+}
+
+model Trend {
+  id          String      @id @default(uuid())
+  topicName   String
+  explanation String      @db.Text
+  reportId    String
+  report      TrendReport @relation(fields: [reportId], references: [id], onDelete: Cascade)
+  videos      Video[]
+}
