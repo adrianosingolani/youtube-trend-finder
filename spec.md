@@ -9,7 +9,7 @@ Work in **one slice at a time** end-to-end before starting the next. This keeps 
 | **1 — API contract & client types** | `@hono/zod-openapi` registry, `GET /openapi.json`, `/docs` (Scalar), ingest route registered in OpenAPI | Frontend `npm run openapi:types` produces `schema.d.ts`; optional thin `fetch` wrapper |
 | **2 — Read path + minimal UI** | `GET /api/v1/trends?limit=&offset=` with Zod query + response schema | Dashboard (or list page) with TanStack Query `staleTime: 3600000` |
 
-**Defer until after slices 1–2:** n8n workflows, Prisma migrations in CI with a real DB, AWS/Terraform, Slack alerts. Those are integration and ops layers on top of a stable HTTP surface.
+**Defer until after slices 1–2:** n8n workflows, AWS/Terraform, Slack alerts. Those are integration and ops layers on top of a stable HTTP surface.
 
 **Style:** Ingest and trends flows use **classes** (services, repositories, adapters), **dependency injection** from a composition root, and **thin Hono handlers**. Deterministic helpers (sampling, truncation, date normalisation) stay as pure functions — see [.cursorrules](.cursorrules).
 
@@ -20,7 +20,7 @@ Work in **one slice at a time** end-to-end before starting the next. This keeps 
 - [x] 1. **Prisma schema**  
   - [x] `Channel` (`id` uuid PK, `youtubeId` unique), `Video` (`channelId` FK), `TrendReport` (`analysisDate` unique), `Trend` with M:N to `Video`.  
   - [x] Indexes on `Video.channelId`, `Video.publishedAt`.  
-  - [ ] **Migrations:** add `prisma/migrations` and use `migrate` in deploy/CI when ready (today: `db push` locally).
+  - [x] **Migrations:** `prisma/migrations` with initial SQL; local `migrate dev`, deploy/CI `migrate deploy`.
 
 - [ ] 2. **Zod + OpenAPI setup**  
   - [x] Zod: `VideoMetadataSchema`, `IngestRequestSchema`, `AITrendSchema`, `AITrendsEnvelopeSchema`; response DTOs for trends list still to align with persisted models.  
@@ -64,7 +64,6 @@ Work in **one slice at a time** end-to-end before starting the next. This keeps 
 - [ ] 9. **n8n** — manual ingest test workflow; daily cron + YouTube → Hono.
 
 - [x] 10. **CI (minimal)**  
-  - [x] GitHub Actions: `npm ci`, `prisma generate`, backend `tsc` build + Vitest; frontend build + Vitest.  
-  - [ ] Extend with DB service + `migrate deploy` when migrations are committed.
+  - [x] GitHub Actions: Postgres service, `prisma migrate deploy`, `prisma generate`, backend `tsc` build + Vitest; frontend build + Vitest.
 
 - [ ] 11. **Observability** — ingestion/LLM/auth logging hardening; optional Slack webhook.
