@@ -11,6 +11,13 @@ Monorepo for a **YouTube market intelligence** pipeline: ingest video metadata (
 
 Implementation checklist and API behaviour are tracked in [`spec.md`](spec.md).
 
+## Default ports
+
+| Service  | URL                      | Notes                                      |
+|----------|--------------------------|--------------------------------------------|
+| Backend  | http://localhost:3000    | Hono (`backend` `npm run dev` / `start`) |
+| Frontend | http://localhost:5173    | Vite dev server (default)                  |
+
 ## Prerequisites
 
 - **Node.js** (current LTS recommended)
@@ -27,7 +34,7 @@ npx prisma db push     # or `migrate dev` once migrations exist
 npm run dev
 ```
 
-Server listens on **http://localhost:3000** by default.
+The API listens on port **3000** by default (see table above).
 
 - Ingest: `POST /api/v1/ingest` (protected with `X-API-Key`)
 - See `backend/.env.example` for `DATABASE_URL`, ingest `API_KEY`, and LLM-related variables.
@@ -46,7 +53,7 @@ npm install
 npm run dev
 ```
 
-Regenerate API types from a running backend:
+Regenerate OpenAPI TypeScript types. This waits up to **120s** for `GET /openapi.json` on the backend (start `backend` in another terminal first), then writes `src/api/schema.d.ts`:
 
 ```bash
 npm run openapi:types
