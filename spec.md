@@ -1,80 +1,70 @@
 # Implementation Plan – YouTube Market Intelligence Engine (Phase 1)
 
+## Vertical slices (recommended order)
+
+Work in **one slice at a time** end-to-end before starting the next. This keeps OpenAPI, generated types, and the UI aligned.
+
+| Slice | Goal | Outcome |
+|-------|------|--------|
+| **1 — API contract & client types** | `@hono/zod-openapi` registry, `GET /openapi.json`, `/docs` (Scalar), ingest route registered in OpenAPI | Frontend `npm run openapi:types` produces `schema.d.ts`; optional thin `fetch` wrapper |
+| **2 — Read path + minimal UI** | `GET /api/v1/trends?limit=&offset=` with Zod query + response schema | Dashboard (or list page) with TanStack Query `staleTime: 3600000` |
+
+**Defer until after slices 1–2:** n8n workflows, Prisma migrations in CI with a real DB, AWS/Terraform, Slack alerts. Those are integration and ops layers on top of a stable HTTP surface.
+
+**Style:** Ingest and trends flows use **classes** (services, repositories, adapters), **dependency injection** from a composition root, and **thin Hono handlers**. Deterministic helpers (sampling, truncation, date normalisation) stay as pure functions — see [.cursorrules](.cursorrules).
+
+---
+
 ## Backend (Hono + Prisma)
 
-**Style:** Implement ingest and trends flows with **classes** (services, repositories, adapters) and **dependency injection** from a composition root; keep **Hono handlers thin**. Use **pure functions** (or `namespace` helpers) for deterministic transforms such as sampling, truncation, and date normalisation — see [.cursorrules](.cursorrules) §3.
-
-- [ ] 1. **Prisma Schema**  
-  - Create `Channel` model with `id` (uuid) as primary key and `youtubeId` as unique (natural key from YouTube).  
-  - Create `Video` model with `channelId` foreign key to `Channel.id`.  
-  - Create `TrendReport` with `analysisDate` (unique, normalised to start of day).  
-  - Create `Trend` model with relation to `TrendReport` and many-to-many to `Video`.  
-  - Add indexes: `Video.channelId`, `Video.publishedAt`.  
-  - Run migration.
+- [x] 1. **Prisma schema**  
+  - [x] `Channel` (`id` uuid PK, `youtubeId` unique), `Video` (`channelId` FK), `TrendReport` (`analysisDate` unique), `Trend` with M:N to `Video`.  
+  - [x] Indexes on `Video.channelId`, `Video.publishedAt`.  
+  - [ ] **Migrations:** add `prisma/migrations` and use `migrate` in deploy/CI when ready (today: `db push` locally).
 
 - [ ] 2. **Zod + OpenAPI setup**  
-  - Install `zod`, `@hono/zod-openapi`, `@scalar/hono-api-reference`.  
-  - Define schemas: `VideoMetadataSchema`, `IngestRequestSchema`, `AITrendSchema`, `AITrendsEnvelopeSchema` (JSON object wrapper for LLM output), `DailyTrendReportSchema`.  
-  - Infer TypeScript types from schemas (no `any`).  
-  - Register schemas with OpenAPI registry, expose `/openapi.json` and `/docs`.
+  - [x] Zod: `VideoMetadataSchema`, `IngestRequestSchema`, `AITrendSchema`, `AITrendsEnvelopeSchema`; response DTOs for trends list still to align with persisted models.  
+  - [ ] Register routes and schemas with `@hono/zod-openapi`, expose `/openapi.json` and `/docs` (Scalar).
 
-- [ ] 3. **Ingest endpoint – core logic**  
-  - Route: `POST /api/v1/ingest`  
-  - Middleware: validate static API key (from env).  
-  - Validate request body with `IngestRequestSchema`.  
-  - **Sampling**: if videos > 50, sort by `viewCount` desc, take top 50, log warning.  
-  - **Truncate** descriptions to 1000 chars.  
-  - **LLM call (agnostic routing):**  
-    - Use a shared client with adapters for Gemini and OpenAI-compatible APIs (OpenAI, Groq). Model order is configurable (default: Gemini 3.1 Flash Lite first, then fallbacks). On rate limits / quota, advance to the next model in the chain; log provider and model per attempt (Pino).  
-    - Light requests (small video count / payload size) may start lower in the chain; heavy requests start at the top.  
-    - System prompt: require a single JSON **object** with key `trends` whose value is an array of 3–5 objects (topicName, explanation, associatedVideoIds). No backticks.  
-    - Timeout per attempt (e.g. 25s); on rate limits, advance to the next model in the chain (see `LLM_MODEL_CHAIN` / defaults in code).  
-    - Parse JSON, validate with `AITrendsEnvelopeSchema` (then use the `trends` array of `AITrendSchema`).  
-    - Enforce 3–5 trends – if not, throw error and log.  
-  - **Idempotent storage**:  
-    - Normalise `analysisDate` to UTC start of day.  
-    - Upsert `Channel` by `youtubeId` (use `channelTitle` from payload).  
-    - Upsert each `Video` by `videoId` (update viewCount, description).  
-    - Upsert `TrendReport` by `analysisDate`. If exists, delete old `Trend` relations and recreate with new trends.  
-  - Return `201 Created`.
+- [x] 3. **Ingest endpoint — core logic** (`POST /api/v1/ingest`)  
+  - [x] `X-API-Key` vs `API_KEY`.  
+  - [x] Body validation with `IngestRequestSchema`.  
+  - [x] Sampling (>50 → top 50 by `viewCount`), description truncation, LLM chain with logging/timeouts.  
+  - [x] JSON parse + `AITrendsEnvelopeSchema`; enforce 3–5 trends.  
+  - [x] Idempotent-ish persist via repository (analysis day UTC, upsert channels/videos, replace trends for that report).  
+  - [x] `201` on success.  
+  - [ ] Register in OpenAPI (slice 1).
 
 - [ ] 4. **Fetch trends endpoint**  
-  - Route: `GET /api/v1/trends?limit=7&offset=0`  
-  - Query validation with Zod.  
-  - Return array of `DailyTrendReportSchema` (include trends and videos).  
-  - Use Prisma include to load trends and their associated videos.
+  - [ ] `GET /api/v1/trends?limit=7&offset=0` with Zod query validation.  
+  - [ ] Response: daily reports with trends and related videos (Prisma `include`).  
+  - [ ] Register in OpenAPI (slice 1).
 
-- [ ] 5. **Error handling & logging**  
-  - Use Pino for structured logging.  
-  - Log LLM cardinality violations, model fallback events, sampling warnings, API key failures.  
-  - Return standard HTTP status codes with user‑friendly messages.  
-  - **Secrets:** load API keys, `DATABASE_URL`, and LLM keys only from `.env` (local and deployment); keep `.env` gitignored and never commit secrets.
+- [x] 5. **Error handling & logging** (ongoing)  
+  - [x] Pino; structured logs for validation, LLM failures, sampling.  
+  - [ ] Tighten user-facing messages and status codes across all routes.  
+  - [x] Secrets from `.env` only; never commit secrets.
 
 ## Frontend (React + TanStack Query)
 
-- [ ] 6. **Generate OpenAPI client**  
-  - Run `openapi-typescript` on `/openapi.json` to produce TypeScript types.  
-  - Create a fetcher wrapper for Hono endpoints.
+- [ ] 6. **OpenAPI-driven types**  
+  - [x] Script: `openapi-typescript` after `wait-on` (see `frontend/package.json`).  
+  - [ ] Depends on slice 1 (`/openapi.json` live).  
+  - [ ] Small fetcher helper for typed paths (optional in slice 1).
 
-- [ ] 7. **Dashboard component**  
-  - Use `useQuery` with `staleTime: 3600000` (1 hour).  
-  - Display a chronological list of `TrendReport` cards.  
-  - Each card shows date, total videos analysed, and 3–5 trends with explanations and sample video titles.
+- [ ] 7. **Dashboard** (slice 2)  
+  - [ ] `useQuery` for trends, `staleTime: 3600000`.  
+  - [ ] Cards: date, videos analysed, 3–5 trends + sample titles.
 
 - [ ] 8. **Styling**  
-  - Use shadcn/ui Card, Badge, ScrollArea components.  
-  - Tailwind CSS for responsive layout.
+  - [ ] shadcn Card, Badge, ScrollArea; responsive Tailwind.
 
-## Integration & Deployment
+## Integration & deployment
 
-- [ ] 9. **n8n workflow**  
-  - Create a manual test workflow that calls `POST /api/v1/ingest` with sample data.  
-  - Configure daily cron (e.g., 02:00 UTC) to fetch last 24h videos from YouTube API and send to Hono.
+- [ ] 9. **n8n** — manual ingest test workflow; daily cron + YouTube → Hono.
 
-- [ ] 10. **CI / CD**  
-    - GitHub Actions: run `tsc --noEmit`, **Vitest** (`vitest run` in backend and frontend), Prisma migrations (with wait‑for‑DB script), and production build.  
-    - Deploy to AWS App Runner via Terraform (phase 2).
+- [x] 10. **CI (minimal)**  
+  - [x] GitHub Actions: `npm ci`, `prisma generate`, backend `tsc` build + Vitest; frontend build + Vitest.  
+  - [ ] Extend with DB service + `migrate deploy` when migrations are committed.
 
-- [ ] 11. **Observability**  
-    - Log ingestion failures, LLM routing and cardinality warnings, unauthorised attempts.  
-    - (Optional) Send critical errors to Slack webhook.
+- [ ] 11. **Observability** — ingestion/LLM/auth logging hardening; optional Slack webhook.

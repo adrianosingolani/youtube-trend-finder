@@ -9,7 +9,7 @@ Monorepo for a **YouTube market intelligence** pipeline: ingest video metadata (
 | `backend/` | Hono API, Prisma, Zod/OpenAPI, Pino logging |
 | `frontend/`| Vite + React + TypeScript, Tailwind, TanStack Query |
 
-Implementation checklist and API behaviour are tracked in [`spec.md`](spec.md).
+Implementation checklist, API behaviour, and **vertical slices** (recommended build order: OpenAPI surface → read API + UI → n8n/ops) are in [`spec.md`](spec.md).
 
 ## Default ports
 
@@ -53,7 +53,7 @@ npm install
 npm run dev
 ```
 
-Regenerate OpenAPI TypeScript types. This waits up to **120s** for `GET /openapi.json` on the backend (start `backend` in another terminal first), then writes `src/api/schema.d.ts`:
+Regenerate OpenAPI TypeScript types. This waits up to **120s** for `GET /openapi.json` (once the backend exposes it—see `spec.md` slice 1), then writes `src/api/schema.d.ts`. Start `backend` in another terminal first:
 
 ```bash
 npm run openapi:types
@@ -64,7 +64,15 @@ npm run build
 npm test
 ```
 
+## Continuous integration
+
+On **push** and **pull requests** to `main`, [`.github/workflows/ci.yml`](.github/workflows/ci.yml) runs **`npm ci`**, backend **`prisma generate`** + **`npm run build`** + **`npm test`**, and frontend **`npm run build`** + **`npm test`**.
+
 ## Architecture notes
 
 - **n8n** is intended for scheduled YouTube fetches and calling the ingest API; heavy logic stays in this backend ([`.cursorrules`](.cursorrules)).
 - LLM calls support Gemini and OpenAI-compatible providers (e.g. Groq) with a configurable fallback chain.
+
+## License
+
+[MIT](LICENSE)
