@@ -1,0 +1,26 @@
+# Development-only PostgreSQL. Production uses AWS RDS (see spec / plan).
+# Usage (from repo root): docker compose -f docker-compose.dev.yml up -d
+# Stop: docker compose -f docker-compose.dev.yml down
+# Data persists in the named volume until you `down -v`.
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: youtube-trend-finder-postgres-dev
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: dev
+      POSTGRES_PASSWORD: dev
+      POSTGRES_DB: youtube_trends_dev
+    ports:
+      - '5432:5432'
+    volumes:
+      - youtube_trend_finder_pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U dev -d youtube_trends_dev']
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+volumes:
+  youtube_trend_finder_pgdata:

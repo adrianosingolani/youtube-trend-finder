@@ -14,7 +14,7 @@ This repository has **no root `package.json`**. You work in **`backend/`** and *
 | **PostgreSQL** | Prisma + app data | **14+** (CI uses 16) |
 | **npm** | Comes with Node | Current |
 
-Optional: **Docker** if you prefer running Postgres in a container instead of a local install.
+Optional: **Docker** + **Docker Compose** — the repo includes [`docker-compose.dev.yml`](docker-compose.dev.yml) to run Postgres **for local development only** (production targets **AWS RDS**).
 
 You do **not** need n8n or the YouTube API on your machine to run the API and UI—only to exercise the full production-style flow.
 
@@ -43,22 +43,33 @@ createdb youtube_trends
 # or: psql -U postgres -c "CREATE DATABASE youtube_trends;"
 ```
 
-**B — Docker (no local Postgres install)**
+**B — Docker Compose (dev database only; not for production)**
+
+From the **repository root**:
 
 ```bash
-docker run --name youtube-trend-finder-pg \
-  -e POSTGRES_USER=postgres \
-  -e POSTGRES_PASSWORD=postgres \
-  -e POSTGRES_DB=youtube_trends \
-  -p 5432:5432 \
-  -d postgres:16-alpine
+docker compose -f docker-compose.dev.yml up -d
 ```
 
-Then your URL will look like:
+This starts **PostgreSQL 16** with a named volume for data. Default URL (also in [`backend/.env.example`](backend/.env.example)):
 
-`postgresql://postgres:postgres@localhost:5432/youtube_trends`
+`postgresql://dev:dev@localhost:5432/youtube_trends_dev`
 
-Keep Postgres running whenever you work on the backend.
+Stop (containers only, data kept):
+
+```bash
+docker compose -f docker-compose.dev.yml down
+```
+
+Remove the volume as well (wipes local DB data):
+
+```bash
+docker compose -f docker-compose.dev.yml down -v
+```
+
+If port **5432** is already taken (e.g. another Postgres), change the `ports` mapping in `docker-compose.dev.yml` (e.g. `5433:5432`) and point `DATABASE_URL` at that host port.
+
+Keep Postgres running whenever you work on the backend. **Production** uses **RDS** — do not deploy this compose file as your production database.
 
 ### 3. Backend: environment, dependencies, database schema
 
