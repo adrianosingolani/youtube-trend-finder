@@ -164,7 +164,7 @@ curl -sS -X POST http://localhost:3000/api/v1/ingest \
 
 ## OpenAPI types (frontend)
 
-When the backend exposes **`GET /openapi.json`** (planned in [`spec.md`](spec.md) slice 1), you can regenerate TypeScript types:
+With the backend running, **`GET /openapi.json`** serves the OpenAPI document and **`GET /docs`** is the Scalar UI. Regenerate frontend types with:
 
 ```bash
 cd frontend

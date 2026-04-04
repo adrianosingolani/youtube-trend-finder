@@ -1,4 +1,4 @@
-# Implementation Plan – YouTube Market Intelligence Engine (Phase 1)
+# Phase 1 implementation checklist – YouTube Market Intelligence Engine (Phase 1)
 
 ## Vertical slices (recommended order)
 
@@ -6,7 +6,7 @@ Work in **one slice at a time** end-to-end before starting the next. This keeps 
 
 | Slice | Goal | Outcome |
 |-------|------|--------|
-| **1 — API contract & client types** | `@hono/zod-openapi` registry, `GET /openapi.json`, `/docs` (Scalar), ingest route registered in OpenAPI | Frontend `npm run openapi:types` produces `schema.d.ts`; optional thin `fetch` wrapper |
+| **1 — API contract & client types** | **Complete:** `@hono/zod-openapi`, `GET /openapi.json`, `/docs` (Scalar), ingest in OpenAPI | Frontend `npm run openapi:types` produces `schema.d.ts`; optional thin `fetch` wrapper |
 | **2 — Read path + minimal UI** | `GET /api/v1/trends?limit=&offset=` with Zod query + response schema | Dashboard (or list page) with TanStack Query `staleTime: 3600000` |
 
 **Defer until after slices 1–2:** n8n workflows, AWS/Terraform, Slack alerts. Those are integration and ops layers on top of a stable HTTP surface.
@@ -22,9 +22,9 @@ Work in **one slice at a time** end-to-end before starting the next. This keeps 
   - [x] Indexes on `Video.channelId`, `Video.publishedAt`.  
   - [x] **Migrations:** `prisma/migrations` with initial SQL; local `migrate dev`, deploy/CI `migrate deploy`.
 
-- [ ] 2. **Zod + OpenAPI setup**  
+- [x] 2. **Zod + OpenAPI setup**  
   - [x] Zod: `VideoMetadataSchema`, `IngestRequestSchema`, `AITrendSchema`, `AITrendsEnvelopeSchema`; response DTOs for trends list still to align with persisted models.  
-  - [ ] Register routes and schemas with `@hono/zod-openapi`, expose `/openapi.json` and `/docs` (Scalar).
+  - [x] Register routes and schemas with `@hono/zod-openapi`, expose `/openapi.json` and `/docs` (Scalar).
 
 - [x] 3. **Ingest endpoint — core logic** (`POST /api/v1/ingest`)  
   - [x] `X-API-Key` vs `API_KEY`.  
@@ -33,7 +33,7 @@ Work in **one slice at a time** end-to-end before starting the next. This keeps 
   - [x] JSON parse + `AITrendsEnvelopeSchema`; enforce 3–5 trends.  
   - [x] Idempotent-ish persist via repository (analysis day UTC, upsert channels/videos, replace trends for that report).  
   - [x] `201` on success.  
-  - [ ] Register in OpenAPI (slice 1).
+  - [x] Register in OpenAPI (slice 1).
 
 - [ ] 4. **Fetch trends endpoint**  
   - [ ] `GET /api/v1/trends?limit=7&offset=0` with Zod query validation.  
@@ -49,7 +49,7 @@ Work in **one slice at a time** end-to-end before starting the next. This keeps 
 
 - [ ] 6. **OpenAPI-driven types**  
   - [x] Script: `openapi-typescript` after `wait-on` (see `frontend/package.json`).  
-  - [ ] Depends on slice 1 (`/openapi.json` live).  
+  - [x] Backend serves `/openapi.json` (slice 1).  
   - [ ] Small fetcher helper for typed paths (optional in slice 1).
 
 - [ ] 7. **Dashboard** (slice 2)  

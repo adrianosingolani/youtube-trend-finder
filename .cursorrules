@@ -31,3 +31,13 @@ Prefer the following stack. Do not introduce other frameworks or major libraries
 * **Logic Separation:** n8n is strictly for I/O and orchestration (fetching YouTube data). All complex data transformations and AI prompts must reside in the Hono backend to ensure testability and version control.
 * **Type Safety:** The frontend and backend must share types generated from the OpenAPI spec (`openapi-typescript` against `/openapi.json`).
 * **Documentation:** Complex business logic must have inline comments explaining the *why*, not the *what*. Every API endpoint must have clear input/output definitions.
+
+## 6. Git workflow (solo, light branching)
+
+Align with **vertical slices** in [spec.md](spec.md). No PR process required; keep `main` as the last known-good baseline.
+
+* **New branch:** At the **start of a slice** (or first change for that slice), create a branch from `main`, e.g. `slice/openapi`, `feature/trends-get`. Skip only for trivial one-off fixes on an already-clean `main`.
+* **Commits:** Commit in **small, coherent steps** when the usual checks pass (`tsc`, Vitest, etc.). One commit = one short, true summary line. Commit before risky refactors so rollback is easy.
+* **Merge to `main`:** When the **slice is done** (spec checkboxes for that slice satisfied) and **tests pass**, merge the branch into `main`; then branch again for the next slice from updated `main`.
+
+**Agent reminder duty:** At slice start, suggest creating the branch; after logical milestones, suggest a commit with a proposed message; when the slice is green, suggest merging to `main`. If the user says **“git checkpoint”**, offer branch/commit/merge guidance for the current state.
