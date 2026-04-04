@@ -59,13 +59,29 @@ export const ingestOpenApiRoute = createRoute({
       },
       description: 'Missing or invalid X-API-Key',
     },
+    422: {
+      content: {
+        'application/json': {
+          schema: ErrorBodySchema,
+        },
+      },
+      description: 'AI returned too few trends to form a valid report',
+    },
+    502: {
+      content: {
+        'application/json': {
+          schema: ErrorBodySchema,
+        },
+      },
+      description: 'AI provider failed or returned unparseable output',
+    },
     500: {
       content: {
         'application/json': {
           schema: ErrorBodySchema,
         },
       },
-      description: 'LLM, parse, or persistence failure',
+      description: 'Unexpected server or database error',
     },
   },
 })
@@ -77,7 +93,13 @@ export function registerIngestOpenApiRoute(
   app.openapi(ingestOpenApiRoute, async (c) => {
     const apiKey = c.req.header('X-API-Key')
     if (apiKey !== process.env.API_KEY) {
-      return c.json({ error: 'Unauthorized' }, 401)
+      return c.json(
+        {
+          error:
+            'Invalid or missing X-API-Key. The value must match the API_KEY environment variable on the server.',
+        },
+        401,
+      )
     }
     const payload = c.req.valid('json')
     return runIngestAndRespond(c, ingestService, payload)

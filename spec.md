@@ -7,7 +7,7 @@ Work in **one slice at a time** end-to-end before starting the next. This keeps 
 | Slice | Goal | Outcome |
 |-------|------|--------|
 | **1 — API contract & client types** | **Complete:** `@hono/zod-openapi`, `GET /openapi.json`, `/docs` (Scalar), ingest in OpenAPI | Frontend `npm run openapi:types` produces `schema.d.ts`; optional thin `fetch` wrapper |
-| **2 — Read path + minimal UI** | **API done:** `GET /api/v1/trends`; **UI pending:** dashboard | Dashboard with TanStack Query `staleTime: 3600000` |
+| **2 — Read path + minimal UI** | **Complete:** trends API + dashboard UI + shadcn layout | Optional polish: empty states, pagination in UI |
 
 **Defer until after slices 1–2:** n8n workflows, AWS/Terraform, Slack alerts. Those are integration and ops layers on top of a stable HTTP surface.
 
@@ -42,23 +42,23 @@ Work in **one slice at a time** end-to-end before starting the next. This keeps 
 
 - [x] 5. **Error handling & logging** (ongoing)  
   - [x] Pino; structured logs for validation, LLM failures, sampling.  
-  - [ ] Tighten user-facing messages and status codes across all routes.  
+  - [x] Clearer JSON error messages; ingest uses 401 / 400 / 422 / 502 / 500 where appropriate.  
   - [x] Secrets from `.env` only; never commit secrets.
 
 ## Frontend (React + TanStack Query)
 
-- [ ] 6. **OpenAPI-driven types**  
+- [x] 6. **OpenAPI-driven types**  
   - [x] Script: `openapi-typescript` after `wait-on` (see `frontend/package.json`).  
   - [x] Backend serves `/openapi.json` (slice 1).  
-  - [x] `schema.d.ts` regenerated for ingest + trends paths (re-run `npm run openapi:types` when the API changes).  
-  - [ ] Small fetcher helper for typed paths (optional in slice 1).
+  - [x] `schema.d.ts` kept in sync (re-run `npm run openapi:types` when the API changes).  
+  - [x] Typed `fetchTrendReports` in `src/api/client.ts` (paths from OpenAPI types).
 
-- [ ] 7. **Dashboard** (slice 2)  
-  - [ ] `useQuery` for trends, `staleTime: 3600000`.  
-  - [ ] Cards: date, videos analysed, 3–5 trends + sample titles.
+- [x] 7. **Dashboard** (slice 2)  
+  - [x] `useQuery` for trends, `staleTime: 3600000`.  
+  - [x] Cards: date, videos analysed, trends + sample video titles.
 
-- [ ] 8. **Styling**  
-  - [ ] shadcn Card, Badge, ScrollArea; responsive Tailwind.
+- [x] 8. **Styling**  
+  - [x] shadcn-style Card, Badge, ScrollArea; Tailwind layout; Vite `/api` proxy for dev.
 
 ## Integration & deployment
 

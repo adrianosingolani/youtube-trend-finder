@@ -57,8 +57,26 @@ export interface paths {
                         "application/json": components["schemas"]["ErrorBody"];
                     };
                 };
-                /** @description LLM, parse, or persistence failure */
+                /** @description AI returned too few trends to form a valid report */
+                422: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorBody"];
+                    };
+                };
+                /** @description Unexpected server or database error */
                 500: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ErrorBody"];
+                    };
+                };
+                /** @description AI provider failed or returned unparseable output */
+                502: {
                     headers: {
                         [name: string]: unknown;
                     };

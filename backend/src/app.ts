@@ -11,7 +11,9 @@ export function createApp(): OpenAPIHono {
       if (!result.success) {
         logger.error({ err: result.error }, 'request_validation_failed')
         const message =
-          result.target === 'query' ? 'Invalid query parameters' : 'Invalid request body'
+          result.target === 'query'
+            ? 'Invalid query parameters. Use limit (1–100, default 7) and offset (≥ 0).'
+            : 'Invalid request body. Send Content-Type: application/json with a payload that matches the schema.'
         return c.json({ error: message }, 400)
       }
     },
