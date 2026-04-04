@@ -7,7 +7,7 @@ Work in **one slice at a time** end-to-end before starting the next. This keeps 
 | Slice | Goal | Outcome |
 |-------|------|--------|
 | **1 — API contract & client types** | **Complete:** `@hono/zod-openapi`, `GET /openapi.json`, `/docs` (Scalar), ingest in OpenAPI | Frontend `npm run openapi:types` produces `schema.d.ts`; optional thin `fetch` wrapper |
-| **2 — Read path + minimal UI** | `GET /api/v1/trends?limit=&offset=` with Zod query + response schema | Dashboard (or list page) with TanStack Query `staleTime: 3600000` |
+| **2 — Read path + minimal UI** | **API done:** `GET /api/v1/trends`; **UI pending:** dashboard | Dashboard with TanStack Query `staleTime: 3600000` |
 
 **Defer until after slices 1–2:** n8n workflows, AWS/Terraform, Slack alerts. Those are integration and ops layers on top of a stable HTTP surface.
 
@@ -35,10 +35,10 @@ Work in **one slice at a time** end-to-end before starting the next. This keeps 
   - [x] `201` on success.  
   - [x] Register in OpenAPI (slice 1).
 
-- [ ] 4. **Fetch trends endpoint**  
-  - [ ] `GET /api/v1/trends?limit=7&offset=0` with Zod query validation.  
-  - [ ] Response: daily reports with trends and related videos (Prisma `include`).  
-  - [ ] Register in OpenAPI (slice 1).
+- [x] 4. **Fetch trends endpoint**  
+  - [x] `GET /api/v1/trends?limit=7&offset=0` with Zod query validation.  
+  - [x] Response: daily reports with trends and related videos (Prisma `include`).  
+  - [x] Register in OpenAPI.
 
 - [x] 5. **Error handling & logging** (ongoing)  
   - [x] Pino; structured logs for validation, LLM failures, sampling.  
@@ -50,6 +50,7 @@ Work in **one slice at a time** end-to-end before starting the next. This keeps 
 - [ ] 6. **OpenAPI-driven types**  
   - [x] Script: `openapi-typescript` after `wait-on` (see `frontend/package.json`).  
   - [x] Backend serves `/openapi.json` (slice 1).  
+  - [x] `schema.d.ts` regenerated for ingest + trends paths (re-run `npm run openapi:types` when the API changes).  
   - [ ] Small fetcher helper for typed paths (optional in slice 1).
 
 - [ ] 7. **Dashboard** (slice 2)  

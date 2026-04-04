@@ -32,11 +32,39 @@ export const AITrendsEnvelopeSchema = z.object({
   trends: z.array(AITrendSchema).min(3).max(5),
 })
 
+/** Video snippet embedded in a trend on read APIs (dashboard). */
+export const TrendVideoSnippetSchema = z
+  .object({
+    videoId: z.string().min(1),
+    title: z.string().min(1),
+  })
+  .openapi('TrendVideoSnippet')
+
+/** One trend row with linked videos as returned by `GET /api/v1/trends`. */
+export const TrendReportTrendSchema = z
+  .object({
+    topicName: z.string().min(1),
+    explanation: z.string().min(1),
+    videos: z.array(TrendVideoSnippetSchema),
+  })
+  .openapi('TrendReportTrend')
+
 export const DailyTrendReportSchema = z
   .object({
     id: z.string().uuid(),
     analysisDate: z.string().datetime(),
-    trends: z.array(AITrendSchema),
+    trends: z.array(TrendReportTrendSchema),
     totalVideosAnalyzed: z.number().int().nonnegative(),
   })
   .openapi('DailyTrendReport')
+
+export const TrendsQuerySchema = z.object({
+  limit: z.coerce.number().int().min(1).max(100).default(7).openapi({
+    param: { name: 'limit', in: 'query' },
+    example: 7,
+  }),
+  offset: z.coerce.number().int().min(0).default(0).openapi({
+    param: { name: 'offset', in: 'query' },
+    example: 0,
+  }),
+})

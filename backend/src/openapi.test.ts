@@ -12,6 +12,7 @@ describe('OpenAPI', () => {
     }
     expect(doc.openapi).toMatch(/^3\./)
     expect(doc.paths).toHaveProperty('/api/v1/ingest')
+    expect(doc.paths).toHaveProperty('/api/v1/trends')
   })
 
   it('serves Scalar HTML at /docs', async () => {

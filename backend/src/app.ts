@@ -1,15 +1,18 @@
 import { OpenAPIHono } from '@hono/zod-openapi'
 import { Scalar } from '@scalar/hono-api-reference'
-import { createIngestTrendsService } from './composition.js'
+import { createIngestTrendsService, createListTrendReportsService } from './composition.js'
 import { logger } from './logger.js'
 import { registerIngestOpenApiRoute } from './routes/ingest-openapi.js'
+import { registerTrendsOpenApiRoute } from './routes/trends-openapi.js'
 
 export function createApp(): OpenAPIHono {
   const app = new OpenAPIHono({
     defaultHook: (result, c) => {
       if (!result.success) {
         logger.error({ err: result.error }, 'request_validation_failed')
-        return c.json({ error: 'Invalid request body' }, 400)
+        const message =
+          result.target === 'query' ? 'Invalid query parameters' : 'Invalid request body'
+        return c.json({ error: message }, 400)
       }
     },
   })
@@ -22,6 +25,9 @@ export function createApp(): OpenAPIHono {
 
   const ingestService = createIngestTrendsService()
   registerIngestOpenApiRoute(app, ingestService)
+
+  const listTrendReportsService = createListTrendReportsService()
+  registerTrendsOpenApiRoute(app, listTrendReportsService)
 
   app.doc('/openapi.json', (c) => ({
     openapi: '3.0.0',
